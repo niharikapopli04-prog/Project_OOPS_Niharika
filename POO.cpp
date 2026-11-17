@@ -1,51 +1,271 @@
-#include <iomanip> #include <string> using namespace std; 
- 
-// ===== PART 1: DATA (struct instead of class) ===== struct Product {     int id;            // unique product ID     string name;       // product name     double basePrice;  // original price     int category;      // 1 = Book, 2 = Accessory 
-}; 
- 
-struct Bill {     double total;      // total bill amount 
-}; 
- 
-// ===== PART 2: LIVE PRODUCT COUNTER (global variable) ===== int productCount = 0; 
- 
-// ===== PART 3: CREATE / DESTROY PRODUCT ===== 
-Product createProduct(int id, string name, double price, int category) {     if (price < 0) {                    // handle invalid price         cout << "Invalid price! Set to 0\n";         price = 0; 
-    } 
-    Product p = {id, name, price, category}; 
-    productCount++;                     // one more live product     return p; 
-} 
- 
-void destroyProduct() {     productCount--;                     // one less live product 
-} 
- 
-// ===== PART 4: CATEGORY PRICE RULES (if/else on category code) ===== double finalPrice(const Product& p) {     if (p.category == 1) return p.basePrice * 0.90;      // Book     else if (p.category == 2) return p.basePrice * 1.05; // Accessory     else return p.basePrice;                             // unknown category 
-} 
- 
-// ===== PART 5: DISCOUNTS (two versions = function overloading) ===== 
-// Version 1: percentage discount only double discount(const Product& p, double percent) {     return finalPrice(p) * (1.0 - percent / 100.0); 
-} 
-// Version 2: percentage discount + flat coupon (never below 0) double discount(const Product& p, double percent, double coupon) {     double amount = discount(p, percent) - coupon;     return amount > 0 ? amount : 0; 
-} 
- 
-// ===== PART 6: BILLING ===== 
-Bill makeBill(double amount) {     Bill b = {amount};     return b; 
-} 
-Bill addBills(const Bill& a, const Bill& b) {   // combines two bills     return makeBill(a.total + b.total); 
-} void printBill(const Bill& b) {     cout << fixed << setprecision(2) << b.total; 
-} 
- 
-// ===== PART 7: AUDIT FUNCTION ===== 
-void auditProduct(const Product& p) {     cout << "Audit: ID=" << p.id << ", Name=" << p.name << "\n"; 
-} 
- 
-// ===== PART 8: MAIN (demo, matches the expected output) ===== int main() {     cout << fixed << setprecision(2); 
-    Product b = createProduct(101, "C++ Textbook", 500, 1); 
-    Product a = createProduct(202, "USB Mouse", 800, 2); 
- 
-    cout << "Products registered: " << productCount << "\n";     cout << b.name << " | Category price: " << finalPrice(b) << "\n";     cout << a.name << " | Category price: " << finalPrice(a) << "\n";     cout << "Book after 10% discount: " << discount(b, 10.0) << "\n";     cout << "Mouse after 10% and Rs 20 coupon: " << discount(a, 10.0, 20.0) << "\n"; 
- 
-    Bill grandTotal = addBills(makeBill(discount(b, 10.0)),                                makeBill(discount(a, 10.0, 20.0)));     cout << "Grand total (Rs): ";     printBill(grandTotal);     cout << "\n"; 
- 
-    auditProduct(b);     return 0; 
-} 
-//jhsjhdgfsjbccjdshvdcw
+
+#include <iostream>
+#include <iomanip>
+#include <string>
+using namespace std;
+
+struct Product {
+    int id;
+    string name;
+    double basePrice;
+    int category;
+};
+
+struct Bill {
+    double total;
+};
+
+Product products[100];
+int productCount = 0;
+
+// Calculate category price
+double finalPrice(const Product& p) {
+    if (p.category == 1)
+        return p.basePrice * 0.90;
+    else if (p.category == 2)
+        return p.basePrice * 1.05;
+    else
+        return p.basePrice;
+}
+
+// Discount function
+double discount(const Product& p, double percent) {
+    return finalPrice(p) * (1 - percent / 100);
+}
+
+// Discount with coupon
+double discount(const Product& p, double percent, double coupon) {
+    double amount = discount(p, percent) - coupon;
+    return amount > 0 ? amount : 0;
+}
+
+// Billing functions
+Bill makeBill(double amount) {
+    Bill b = {amount};
+    return b;
+}
+
+Bill addBills(const Bill& a, const Bill& b) {
+    return makeBill(a.total + b.total);
+}
+
+// Add product
+void addProduct() {
+    if (productCount >= 100) {
+        cout << "Store is full!\n";
+        return;
+    }
+
+    Product p;
+
+    cout << "\nEnter Product ID: ";
+    cin >> p.id;
+
+    for (int i = 0; i < productCount; i++) {
+        if (products[i].id == p.id) {
+            cout << "Product ID already exists!\n";
+            return;
+        }
+    }
+
+    cin.ignore();
+
+    cout << "Enter Product Name: ";
+    getline(cin, p.name);
+
+    cout << "Enter Base Price: Rs ";
+    cin >> p.basePrice;
+
+    if (p.basePrice < 0) {
+        cout << "Invalid price!\n";
+        return;
+    }
+
+    cout << "\nSelect Category:\n";
+    cout << "1. Book (10% discount)\n";
+    cout << "2. Accessory (5% extra charge)\n";
+    cout << "Enter choice: ";
+    cin >> p.category;
+
+    if (p.category != 1 && p.category != 2) {
+        cout << "Invalid category!\n";
+        return;
+    }
+
+    products[productCount++] = p;
+
+    cout << "\nProduct added successfully!\n";
+}
+
+// Display products
+void displayProducts() {
+    if (productCount == 0) {
+        cout << "\nNo products registered yet!\n";
+        return;
+    }
+
+    cout << "\n========== PRODUCT LIST ==========\n";
+
+    for (int i = 0; i < productCount; i++) {
+        cout << "\nID: " << products[i].id;
+        cout << "\nName: " << products[i].name;
+        cout << "\nBase Price: Rs " << products[i].basePrice;
+        cout << "\nCategory: "
+             << (products[i].category == 1 ? "Book" : "Accessory");
+        cout << "\nFinal Price: Rs " << finalPrice(products[i]);
+        cout << "\n----------------------------------\n";
+    }
+}
+
+// Generate bill
+void generateBill() {
+    if (productCount == 0) {
+        cout << "\nNo products available!\n";
+        return;
+    }
+
+    int id;
+    double percent, coupon;
+    Bill grandTotal = makeBill(0);
+
+    char choice;
+
+    do {
+        cout << "\nEnter Product ID: ";
+        cin >> id;
+
+        int index = -1;
+
+        for (int i = 0; i < productCount; i++) {
+            if (products[i].id == id) {
+                index = i;
+                break;
+            }
+        }
+
+        if (index == -1) {
+            cout << "Product not found!\n";
+        }
+        else {
+            cout << "Product: " << products[index].name;
+            cout << "\nCategory Price: Rs "
+                 << finalPrice(products[index]);
+
+            cout << "\nEnter discount percentage (0-100): ";
+            cin >> percent;
+
+            if (percent < 0 || percent > 100) {
+                cout << "Invalid discount! Try again.\n";
+                continue;
+            }
+
+            cout << "Apply coupon? (y/n): ";
+            cin >> choice;
+
+            double amount;
+
+            if (choice == 'y' || choice == 'Y') {
+                cout << "Enter coupon amount: Rs ";
+                cin >> coupon;
+
+                if (coupon < 0) {
+                    cout << "Invalid coupon amount!\n";
+                    continue;
+                }
+
+                amount = discount(products[index], percent, coupon);
+            }
+            else {
+                amount = discount(products[index], percent);
+            }
+
+            cout << "\nFinal Product Price: Rs "
+                 << amount << "\n";
+
+            grandTotal = addBills(grandTotal, makeBill(amount));
+        }
+
+        cout << "\nAdd another product to bill? (y/n): ";
+        cin >> choice;
+
+    } while (choice == 'y' || choice == 'Y');
+
+    cout << "\n========== FINAL BILL ==========\n";
+    cout << "Grand Total: Rs "
+         << fixed << setprecision(2) << grandTotal.total;
+    cout << "\n================================\n";
+}
+
+// Audit product
+void auditProduct() {
+    int id;
+
+    cout << "\nEnter Product ID for audit: ";
+    cin >> id;
+
+    for (int i = 0; i < productCount; i++) {
+        if (products[i].id == id) {
+            cout << "\nAudit: ID = " << products[i].id;
+            cout << "\nProduct Name = " << products[i].name;
+            cout << "\nProduct found successfully!\n";
+            return;
+        }
+    }
+
+    cout << "Product not found!\n";
+}
+
+// Main function
+int main() {
+    int choice;
+
+    cout << fixed << setprecision(2);
+
+    do {
+        cout << "\n\n====================================";
+        cout << "\n       CAMPUS STORE MANAGEMENT";
+        cout << "\n====================================";
+        cout << "\n1. Add New Product";
+        cout << "\n2. Display All Products";
+        cout << "\n3. Generate Bill";
+        cout << "\n4. Audit Product";
+        cout << "\n5. Exit";
+        cout << "\n====================================";
+        cout << "\nEnter your choice: ";
+
+        if (!(cin >> choice)) {
+            cout << "\nInvalid input! Please enter a number.\n";
+            cin.clear();
+            cin.ignore(10000, '\n');
+            continue;
+        }
+
+        switch (choice) {
+            case 1:
+                addProduct();
+                break;
+
+            case 2:
+                displayProducts();
+                break;
+
+            case 3:
+                generateBill();
+                break;
+
+            case 4:
+                auditProduct();
+                break;
+
+            case 5:
+                cout << "\nThank you for visiting Campus Store!\n";
+                break;
+
+            default:
+                cout << "\nInvalid choice! Please try again.\n";
+        }
+
+    } while (choice != 5);
+
+    return 0;
+}
